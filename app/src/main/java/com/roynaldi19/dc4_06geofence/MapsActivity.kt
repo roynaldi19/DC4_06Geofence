@@ -1,8 +1,15 @@
 package com.roynaldi19.dc4_06geofence
 
+import android.Manifest
+import android.annotation.SuppressLint
+import android.annotation.TargetApi
+import android.content.pm.PackageManager
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -41,9 +48,65 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         map.addMarker(MarkerOptions().position(kiddHome).title("Kidd Home"))
         map.moveCamera(CameraUpdateFactory.newLatLngZoom(kiddHome, 15f))
 
-        map.addCircle(CircleOptions().center(kiddHome).radius(geofenceRadius).fillColor(0x22FF0000).strokeColor(Color.RED).strokeWidth(3f))
+        map.addCircle(
+            CircleOptions().center(kiddHome).radius(geofenceRadius).fillColor(0x22FF0000)
+                .strokeColor(Color.RED).strokeWidth(3f)
+        )
+
+        getMyLocation()
 
 
     }
 
+    private val requestBackGroundLocationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            getMyLocation()
+        }
+
+    }
+
+    private val runningQOrLater = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+
+    @TargetApi(Build.VERSION_CODES.Q)
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            if (runningQOrLater) {
+                requestBackGroundLocationPermissionLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+            } else {
+                getMyLocation()
+            }
+        }
+    }
+
+    private fun checkPermission(permission: String): Boolean {
+        return ContextCompat.checkSelfPermission(
+            this,
+            permission
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    @TargetApi(Build.VERSION_CODES.Q)
+    private fun checkForeGroundAndBackgroundLocationPermission(): Boolean {
+        val foregroundLocationApproved = checkPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+        val backgroundPermissionApproved =
+            if (runningQOrLater) {
+                checkPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+            } else {
+                true
+            }
+        return foregroundLocationApproved && backgroundPermissionApproved
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun getMyLocation() {
+        if (checkForeGroundAndBackgroundLocationPermission()) {
+            map.isMyLocationEnabled = true
+        } else {
+            requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+    }
 }
