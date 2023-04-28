@@ -1,4 +1,4 @@
-package com.roynaldi19.dc4bpai06_03geofence
+package com.roynaldi19.dc4_06geofence
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
